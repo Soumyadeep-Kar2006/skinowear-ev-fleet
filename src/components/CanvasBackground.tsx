@@ -1,147 +1,131 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { useScrollProgress } from '../hooks/useScrollProgress';
 
-const neonGreen = '#39FF14';
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  cw: number,
+  ch: number
+) {
+  const iw = video.videoWidth;
+  const ih = video.videoHeight;
+  if (!iw || !ih) return;
 
-const particles = Array.from({ length: 8 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  size: Math.random() * 2 + 1,
-  delay: Math.random() * 3,
-  duration: Math.random() * 4 + 4,
-}));
+  const imgRatio = iw / ih;
+  const canvasRatio = cw / ch;
+
+  let sx: number, sy: number, sw: number, sh: number;
+  if (imgRatio > canvasRatio) {
+    sw = ih * canvasRatio;
+    sh = ih;
+    sx = (iw - sw) * 0.35;
+    sy = 0;
+  } else {
+    sw = iw;
+    sh = iw / canvasRatio;
+    sx = 0;
+    sy = 0;
+  }
+
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, cw, ch);
+}
 
 export default function CanvasBackground() {
-  const [videoReady, setVideoReady] = useState(false);
-  const [showContent, setShowContent] = useState(false);
-  const readyTimer = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const loadedRef = useRef(false);
+  const currentTimeRef = useRef(-1);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      readyTimer.current = true;
-      if (videoReady) setShowContent(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [videoReady]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    function resize() {
+      if (!canvas || !ctx) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+
+      const video = videoRef.current;
+      if (video && loadedRef.current && video.readyState >= 2) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawImageCover(ctx, video, canvas.width, canvas.height);
+      }
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
 
   useEffect(() => {
-    if (videoReady && readyTimer.current) setShowContent(true);
-  }, [videoReady]);
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.pause();
+
+    function onMetadata() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const p = docHeight > 0 ? Math.min(1, Math.max(0, scrollTop / docHeight)) : 0;
+      video.currentTime = p * video.duration;
+      loadedRef.current = true;
+      setReady(true);
+    }
+
+    video.addEventListener('loadedmetadata', onMetadata);
+    return () => video.removeEventListener('loadedmetadata', onMetadata);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    function onSeeked() {
+      const canvas = canvasRef.current;
+      if (!canvas || !loadedRef.current) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawImageCover(ctx, video, canvas.width, canvas.height);
+    }
+
+    video.addEventListener('seeked', onSeeked);
+    return () => video.removeEventListener('seeked', onSeeked);
+  }, []);
+
+  const onProgress = useCallback((p: number) => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !loadedRef.current || !canvas) return;
+
+    const targetTime = p * video.duration;
+    if (Math.abs(targetTime - currentTimeRef.current) < 0.02) return;
+    currentTimeRef.current = targetTime;
+    video.currentTime = targetTime;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawImageCover(ctx, video, canvas.width, canvas.height);
+  }, []);
+
+  useScrollProgress(onProgress);
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/20 backdrop-blur-xl"
-        style={{
-          opacity: showContent ? 0 : 1,
-          transition: 'opacity 0.8s ease',
-          pointerEvents: showContent ? 'none' : 'auto',
-        }}
-      >
-
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            className="absolute rounded-full"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: `${p.size}px`,
-              height: `${p.size}px`,
-              background: neonGreen,
-              opacity: 0,
-              animation: `particleFloat ${p.duration}s ease-in-out ${p.delay}s infinite`,
-            }}
-          />
-        ))}
-
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute h-px w-1/4"
-            style={{
-              top: '40%',
-              left: '-10%',
-              background: `linear-gradient(90deg, transparent, ${neonGreen}, transparent)`,
-              animation: 'energySweep 4s ease-in-out infinite',
-              opacity: 0.2,
-            }}
-          />
-        </div>
-
-          <div
-            className="relative flex flex-col items-center px-12 py-16 mx-6"
-            style={{
-              background: 'rgba(255,255,255,0.6)',
-              border: '1px solid rgba(57,255,20,0.12)',
-              borderRadius: '24px',
-              boxShadow: '0 4px 30px rgba(0,0,0,0.04)',
-            }}
-        >
-          <div
-            className="absolute top-0 left-[10%] right-[10%] h-px"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${neonGreen}, transparent)`,
-              opacity: 0.3,
-            }}
-          />
-
-          <h1
-            className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-center"
-            style={{
-              color: '#0d5c0d',
-              letterSpacing: '-2.5px',
-            }}
-          >
-            SKINOWEAR
-          </h1>
-
-          <p
-            className="text-xs sm:text-sm mt-5 tracking-[0.35em] text-center uppercase font-medium"
-            style={{ color: '#6b7280' }}
-          >
-            EV FLEET SERVICES
-          </p>
-
-          <div className="flex items-center gap-3 mt-8 pt-7" style={{ borderTop: '1px solid rgba(57,255,20,0.1)' }}>
-            <span
-              className="text-lg sm:text-xl"
-              style={{ color: neonGreen }}
-            >
-              ⚡
-            </span>
-            <p
-              className="text-base sm:text-lg font-light tracking-wide"
-              style={{ color: '#374151' }}
-            >
-              Electrifying the Road Ahead
-            </p>
-          </div>
-
-          <div className="mt-10 w-56 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(57,255,20,0.15)' }}>
-            <div
-              className="h-full rounded-full"
-              style={{
-                background: neonGreen,
-                animation: 'chargeLine 2s ease-in-out infinite',
-              }}
-            />
-          </div>
-        </div>
-      </div>
-      <video
+      <canvas
+        ref={canvasRef}
         className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none will-change-transform"
-        style={{
-          background: '#000000',
-          transform: 'translateZ(0)',
-        }}
-        src="/bg-vid.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        onCanPlay={() => setVideoReady(true)}
+        style={{ background: '#000000', opacity: ready ? 1 : 0, transition: 'opacity 0.8s ease', transform: 'translateZ(0)' }}
       />
+      <video ref={videoRef} src="/bg-vid.mp4" muted playsInline preload="auto" style={{ display: 'none' }} />
     </>
   );
 }

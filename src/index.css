@@ -34,3 +34,28 @@ body {
 .text-shadow {
   text-shadow: 0 1px 4px rgba(255, 255, 255, 0.5);
 }
+
+@keyframes particleFloat {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  20%  { opacity: 0.8; }
+  80%  { opacity: 0.6; }
+  100% { transform: translateY(-120px) scale(0.5); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes energySweep {
+  0%   { transform: translateX(0); opacity: 0; }
+  20%  { opacity: 0.5; }
+  80%  { opacity: 0.3; }
+  100% { transform: translateX(400px); opacity: 0; }
+}
+
+@keyframes chargeLine {
+  0%   { width: 0%; }
+  50%  { width: 100%; }
+  100% { width: 0%; }
+}

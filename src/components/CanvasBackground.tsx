@@ -71,10 +71,12 @@ export default function CanvasBackground() {
     video.pause();
 
     function onMetadata() {
+      const v = videoRef.current;
+      if (!v) return;
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const p = docHeight > 0 ? Math.min(1, Math.max(0, scrollTop / docHeight)) : 0;
-      video.currentTime = p * video.duration;
+      v.currentTime = p * v.duration;
       loadedRef.current = true;
       setReady(true);
     }
@@ -88,12 +90,13 @@ export default function CanvasBackground() {
     if (!video) return;
 
     function onSeeked() {
+      const v = videoRef.current;
       const canvas = canvasRef.current;
-      if (!canvas || !loadedRef.current) return;
+      if (!v || !canvas || !loadedRef.current) return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawImageCover(ctx, video, canvas.width, canvas.height);
+      drawImageCover(ctx, v, canvas.width, canvas.height);
     }
 
     video.addEventListener('seeked', onSeeked);

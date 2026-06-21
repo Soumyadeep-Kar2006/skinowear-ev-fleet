@@ -57,6 +57,10 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       c.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
     }
 
+    const imgs: HTMLImageElement[] = [];
+    let frameDrawn = false;
+    let frameIndex = -1;
+
     function fillCanvas(index: number) {
       drawFallback();
       if (index >= 0) {
@@ -74,11 +78,6 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     }
     resize();
     window.addEventListener('resize', resize);
-
-    const imgs: HTMLImageElement[] = [];
-
-    let frameDrawn = false;
-    let frameIndex = -1;
 
     function finish() {
       if (frameDrawn) return;

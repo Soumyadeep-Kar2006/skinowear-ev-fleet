@@ -9,6 +9,9 @@ function pad(n: number) {
 export default function CanvasBackground({ progressRef, onReady }: { progressRef: React.MutableRefObject<number>; onReady?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -74,7 +77,7 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       if (!imgs[0] || !imgs[0].complete || imgs[0].naturalWidth === 0) {
         drawFallback();
       }
-      onReady?.();
+      onReadyRef.current?.();
       for (let i = 1; i <= TOTAL_FRAMES; i++) {
         const img = new Image();
         img.src = `/frames/ezgif-frame-${pad(i)}.jpg`;
@@ -118,7 +121,7 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       window.removeEventListener('resize', resize);
       clearTimeout(fallbackTimer);
     };
-  }, [progressRef, onReady]);
+  }, [progressRef, onReadyRef]);
 
   return (
     <canvas

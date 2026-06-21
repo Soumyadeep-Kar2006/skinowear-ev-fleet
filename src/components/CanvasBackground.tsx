@@ -15,13 +15,6 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const imgs: HTMLImageElement[] = [];
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
-      const img = new Image();
-      img.src = `/frames/ezgif-frame-${pad(i)}.jpg`;
-      imgs.push(img);
-    }
-
     const cvs = canvas;
     const c = ctx;
 
@@ -29,6 +22,10 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       cvs.width = window.innerWidth;
       cvs.height = window.innerHeight;
     }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const imgs: HTMLImageElement[] = [];
 
     function drawFrame(index: number) {
       const img = imgs[index];
@@ -55,32 +52,55 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       c.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
     }
 
-    resize();
-    window.addEventListener('resize', resize);
-
     let frameIndex = -1;
+    let ready = false;
 
-    function tryShowFirst() {
-      const first = imgs[0];
-      if (first && first.complete && first.naturalWidth > 0) {
-        drawFrame(0);
-        frameIndex = 0;
-        onReady?.();
-        return true;
+    function loadRest() {
+      for (let i = 2; i <= TOTAL_FRAMES; i++) {
+        const img = new Image();
+        img.src = `/frames/ezgif-frame-${pad(i)}.jpg`;
+        imgs[i] = img;
       }
-      return false;
     }
 
-    if (!tryShowFirst()) {
-      imgs[0].onload = () => {
-        if (document.contains(cvs)) {
-          tryShowFirst();
-        }
-      };
-      tryShowFirst();
+    const first = new Image();
+    imgs[0] = first;
+    first.onload = () => {
+      if (!document.contains(cvs)) return;
+      drawFrame(0);
+      frameIndex = 0;
+      if (!ready) {
+        ready = true;
+        onReady?.();
+        loadRest();
+      }
+    };
+    first.onerror = () => {
+      if (!ready) {
+        ready = true;
+        onReady?.();
+        loadRest();
+      }
+    };
+    first.src = `/frames/ezgif-frame-001.jpg`;
+
+    if (first.complete && first.naturalWidth > 0) {
+      drawFrame(0);
+      frameIndex = 0;
+      if (!ready) {
+        ready = true;
+        onReady?.();
+        loadRest();
+      }
     }
 
-    let fallbackTimer = setTimeout(() => onReady?.(), 3000);
+    const fallbackTimer = setTimeout(() => {
+      if (!ready) {
+        ready = true;
+        onReady?.();
+        loadRest();
+      }
+    }, 3000);
 
     let rafId: number;
     function tick() {

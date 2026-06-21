@@ -23,7 +23,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const root = document.getElementById('root')!;
     const lenis = new Lenis({
+      content: root,
       duration: 1.8,
       easing: (t) => 1 - Math.pow(1 - t, 4),
       orientation: 'vertical',
@@ -52,8 +54,8 @@ export default function App() {
 
   return (
     <>
-      {createPortal(<CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />, document.body)}
-      <LoadingScreen visible={loading} />
+      {createPortal(<CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />, document.getElementById('portal-root')!)}
+      {createPortal(<LoadingScreen visible={loading} />, document.getElementById('portal-root')!)}
       <div className="relative">
         <Navbar lenisRef={lenisRef} />
         <Hero />

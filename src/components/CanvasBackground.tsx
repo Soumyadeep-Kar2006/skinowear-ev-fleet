@@ -21,13 +21,6 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     const cvs = canvas;
     const c = ctx;
 
-    function resize() {
-      cvs.width = window.innerWidth;
-      cvs.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
     function drawFallback() {
       const cw = cvs.width;
       const ch = cvs.height;
@@ -38,9 +31,6 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       c.fillStyle = g;
       c.fillRect(0, 0, cw, ch);
     }
-    drawFallback();
-
-    const imgs: HTMLImageElement[] = [];
 
     function drawFrame(index: number) {
       const img = imgs[index];
@@ -67,6 +57,26 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       c.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
     }
 
+    function fillCanvas(index: number) {
+      drawFallback();
+      if (index >= 0) {
+        const img = imgs[index];
+        if (img?.complete && img.naturalWidth > 0) {
+          drawFrame(index);
+        }
+      }
+    }
+
+    function resize() {
+      cvs.width = window.innerWidth;
+      cvs.height = window.innerHeight;
+      fillCanvas(frameIndex);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const imgs: HTMLImageElement[] = [];
+
     let frameDrawn = false;
     let frameIndex = -1;
 
@@ -89,16 +99,16 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     imgs[0] = first;
     first.onload = () => {
       if (!document.contains(cvs)) return;
-      drawFrame(0);
       frameIndex = 0;
+      fillCanvas(0);
       finish();
     };
     first.onerror = finish;
     first.src = `/frames/ezgif-frame-001.jpg`;
 
     if (first.complete && first.naturalWidth > 0) {
-      drawFrame(0);
       frameIndex = 0;
+      fillCanvas(0);
       finish();
     }
 
@@ -110,7 +120,7 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       const i = Math.round(p * (TOTAL_FRAMES - 1));
       if (i !== frameIndex) {
         frameIndex = i;
-        drawFrame(i);
+        fillCanvas(i);
       }
       rafId = requestAnimationFrame(tick);
     }
@@ -127,7 +137,6 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full z-0 pointer-events-none"
-      style={{ background: '#000' }}
     />
   );
 }

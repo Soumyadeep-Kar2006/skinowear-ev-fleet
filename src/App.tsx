@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -15,6 +16,8 @@ import CTASection from './components/CTASection';
 import Footer from './components/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
+
+const fixedRoot = () => document.getElementById('fixed-root')!;
 
 export default function App() {
   const lenisRef = useRef<Lenis | null>(null);
@@ -49,18 +52,23 @@ export default function App() {
   }, []);
 
   return (
-    <div className="relative">
-      <CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />
-      <LoadingScreen visible={loading} />
-      <Navbar lenisRef={lenisRef} />
-      <Hero />
-      <AboutSection />
-      <SustainabilitySection />
-      <FleetSection />
-      <ImpactSection />
-      <FutureSection />
-      <CTASection />
-      <Footer />
-    </div>
+    <>
+      {createPortal(
+        <CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />,
+        fixedRoot()
+      )}
+      {createPortal(<LoadingScreen visible={loading} />, fixedRoot())}
+      {createPortal(<Navbar lenisRef={lenisRef} />, fixedRoot())}
+      <div>
+        <Hero />
+        <AboutSection />
+        <SustainabilitySection />
+        <FleetSection />
+        <ImpactSection />
+        <FutureSection />
+        <CTASection />
+        <Footer />
+      </div>
+    </>
   );
 }

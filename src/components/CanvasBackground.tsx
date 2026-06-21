@@ -25,6 +25,18 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
     resize();
     window.addEventListener('resize', resize);
 
+    function drawFallback() {
+      const cw = cvs.width;
+      const ch = cvs.height;
+      if (cw === 0 || ch === 0) return;
+      const g = c.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch) * 0.7);
+      g.addColorStop(0, '#1a1a2e');
+      g.addColorStop(1, '#000000');
+      c.fillStyle = g;
+      c.fillRect(0, 0, cw, ch);
+    }
+    drawFallback();
+
     const imgs: HTMLImageElement[] = [];
 
     function drawFrame(index: number) {
@@ -52,11 +64,18 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       c.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
     }
 
+    let frameDrawn = false;
     let frameIndex = -1;
-    let ready = false;
 
-    function loadRest() {
-      for (let i = 2; i <= TOTAL_FRAMES; i++) {
+    function finish() {
+      if (frameDrawn) return;
+      if (!document.contains(cvs)) return;
+      frameDrawn = true;
+      if (!imgs[0] || !imgs[0].complete || imgs[0].naturalWidth === 0) {
+        drawFallback();
+      }
+      onReady?.();
+      for (let i = 1; i <= TOTAL_FRAMES; i++) {
         const img = new Image();
         img.src = `/frames/ezgif-frame-${pad(i)}.jpg`;
         imgs[i] = img;
@@ -69,38 +88,18 @@ export default function CanvasBackground({ progressRef, onReady }: { progressRef
       if (!document.contains(cvs)) return;
       drawFrame(0);
       frameIndex = 0;
-      if (!ready) {
-        ready = true;
-        onReady?.();
-        loadRest();
-      }
+      finish();
     };
-    first.onerror = () => {
-      if (!ready) {
-        ready = true;
-        onReady?.();
-        loadRest();
-      }
-    };
+    first.onerror = finish;
     first.src = `/frames/ezgif-frame-001.jpg`;
 
     if (first.complete && first.naturalWidth > 0) {
       drawFrame(0);
       frameIndex = 0;
-      if (!ready) {
-        ready = true;
-        onReady?.();
-        loadRest();
-      }
+      finish();
     }
 
-    const fallbackTimer = setTimeout(() => {
-      if (!ready) {
-        ready = true;
-        onReady?.();
-        loadRest();
-      }
-    }, 3000);
+    const fallbackTimer = setTimeout(finish, 3000);
 
     let rafId: number;
     function tick() {

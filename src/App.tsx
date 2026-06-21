@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -23,9 +22,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const root = document.getElementById('root')!;
     const lenis = new Lenis({
-      content: root,
       duration: 1.8,
       easing: (t) => 1 - Math.pow(1 - t, 4),
       orientation: 'vertical',
@@ -44,7 +41,6 @@ export default function App() {
     gsap.ticker.lagSmoothing(0);
 
     const refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 50);
-
     return () => {
       clearTimeout(refreshTimer);
       lenis.destroy();
@@ -53,20 +49,18 @@ export default function App() {
   }, []);
 
   return (
-    <>
-      {createPortal(<CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />, document.getElementById('portal-root')!)}
-      {createPortal(<LoadingScreen visible={loading} />, document.getElementById('portal-root')!)}
-      <div className="relative">
-        <Navbar lenisRef={lenisRef} />
-        <Hero />
-        <AboutSection />
-        <SustainabilitySection />
-        <FleetSection />
-        <ImpactSection />
-        <FutureSection />
-        <CTASection />
-        <Footer />
-      </div>
-    </>
+    <div className="relative">
+      <CanvasBackground progressRef={scrollProgressRef} onReady={() => setLoading(false)} />
+      <LoadingScreen visible={loading} />
+      <Navbar lenisRef={lenisRef} />
+      <Hero />
+      <AboutSection />
+      <SustainabilitySection />
+      <FleetSection />
+      <ImpactSection />
+      <FutureSection />
+      <CTASection />
+      <Footer />
+    </div>
   );
 }

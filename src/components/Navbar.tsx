@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Lenis from 'lenis';
 
 const NAV_LINKS = [
   { label: 'Home', href: '#hero' },
@@ -9,7 +10,7 @@ const NAV_LINKS = [
   { label: 'Contact', href: '#cta' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ lenisRef }: { lenisRef: React.MutableRefObject<Lenis | null> }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState('#hero');
@@ -18,25 +19,28 @@ export default function Navbar() {
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
   const onScroll = useCallback(() => {
-    setScrolled(window.scrollY > 60);
+    const scrollY = lenisRef.current?.scroll ?? window.scrollY;
+    setScrolled(scrollY > 60);
 
     const sections = NAV_LINKS.map((l) => document.querySelector(l.href));
-    const scrollPos = window.scrollY + 120;
+    const scrollPos = scrollY + 120;
     let current = '#hero';
     for (let i = sections.length - 1; i >= 0; i--) {
       const el = sections[i];
-      if (el && el.getBoundingClientRect().top + window.scrollY <= scrollPos) {
+      if (el && el.getBoundingClientRect().top + scrollY <= scrollPos) {
         current = NAV_LINKS[i].href;
         break;
       }
     }
     setActive(current);
-  }, []);
+  }, [lenisRef]);
 
   useEffect(() => {
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    const rafId = requestAnimationFrame(function tick() {
+      onScroll();
+      requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [onScroll]);
 
   useEffect(() => {

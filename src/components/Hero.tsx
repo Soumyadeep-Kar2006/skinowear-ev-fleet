@@ -1,8 +1,5 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -12,20 +9,23 @@ export default function Hero() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
+      const tl = gsap.timeline();
+      tl.fromTo(
         titleRef.current,
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: sectionRef.current, start: 'top 85%', once: true } }
+        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
       );
-      gsap.fromTo(
+      tl.fromTo(
         subtitleRef.current,
         { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, delay: 0.2, ease: 'power3.out', scrollTrigger: { trigger: sectionRef.current, start: 'top 80%', once: true } }
+        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' },
+        '-=0.5'
       );
-      gsap.fromTo(
+      tl.fromTo(
         btnRef.current,
         { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, delay: 0.4, ease: 'power3.out', scrollTrigger: { trigger: sectionRef.current, start: 'top 75%', once: true } }
+        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' },
+        '-=0.5'
       );
     }, sectionRef);
 
